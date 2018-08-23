@@ -4,7 +4,7 @@
 # @Date:   2018-05-16
 # @Filename: RavenRecSyst.py
 # @Last modified by:   archer
-# @Last modified time: 2018-08-22
+# @Last modified time: 2018-08-23
 # @License: Please see LICENSE file in project root
 
 
@@ -84,7 +84,8 @@ path = os.path.dirname(os.path.abspath(fileAndPath))
 prePend = "[ " + name + " ] "
 description = name + "; " + "Nemesyst, an adversarual neural network based recommender system."
 
-dependancies = ["https://github.com/DreamingRaven/RavenPythonLib"]
+dependancies = ["https://github.com/DreamingRaven/RavenPythonLib",
+                "https://github.com/DreamingRaven/keras_pickle_wrapper"]
 
 args = argz(sys.argv[1:], description=description)
 args_json = json.loads(json.dumps(args))

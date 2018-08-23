@@ -17,6 +17,7 @@ import datetime
 from bson import objectid, Binary
 from keras.models import Sequential
 from keras.layers import Dense, Activation, LSTM
+from keras_pickle_wrapper.keras_pickle_wrapper.__init__ import KerasPickleWrapper # just a quick and dirty import for now untill its feasability is assessed
 
 
 
@@ -80,7 +81,7 @@ class NeuralNetwork():
 
     #TODO: check this through yet untested
     def getModel(self):
-        self.make_keras_picklable()
+        # self.make_keras_picklable()
 
         query={}
         if(self.model_pipeline != None):
@@ -99,7 +100,7 @@ class NeuralNetwork():
             pprint.pprint(model_dict)
             model_bin = dict(model_metadata['model_bin'])[0]
             self.model = pickle.loads(model_bin)
-            self.compile()
+            self.compile(reload=True)
         else:
             self.log(self.prePend + "could not get model cursor from database: ", 2)
 
@@ -113,9 +114,13 @@ class NeuralNetwork():
 
 
 
-    def compile(self):
+    def compile(self, reload=False):
         if(self.model != None):
-            self.model.compile(optimizer=self.args["optimizer"], loss=self.args["lossMetric"])
+            if(reload == False):
+                self.model.compile(optimizer=self.args["optimizer"], loss=self.args["lossMetric"])
+            else:
+                self.model().compile(optimizer=self.args["optimizer"], loss=self.args["lossMetric"])
+            self.model = KerasPickleWrapper(self.model) # put keras model in a nice wrapper
         else:
             print("No model to compile, can not NN.compile()", 1)
 
@@ -323,14 +328,14 @@ class NeuralNetwork():
 
                 if(toTrain == True):
                     # self.model.summary()
-                    self.model.fit(x=data, y=target, batch_size=self.args["batchSize"],
+                    self.model().fit(x=data, y=target, batch_size=self.args["batchSize"],
                         epochs=self.args["epochs"], verbose=self.args["kerLogMax"],
                         callbacks=None, validation_split=0, validation_data=None,
                         shuffle=False, class_weight=None, sample_weight=None,
                         initial_epoch=0, steps_per_epoch=None, validation_steps=None)
                 else:
                     self.numValidExamples = self.numValidExamples + 1
-                    return self.model.evaluate(x=data, y=target,
+                    return self.model()().evaluate(x=data, y=target,
                         batch_size=self.args["batchSize"],
                         verbose=self.args["kerLogMax"])
 
@@ -358,9 +363,9 @@ class NeuralNetwork():
 
             # check if shape meets expectations
             if(data.shape == expectShape):
-                # x = self.model.predict(x=data, batch_size=self.args["batchSize"],
-                    # verbose=self.args["kerLogMax"])
-                x = self.model.predict_on_batch(x=data)
+                x = self.model()().predict(x=data, batch_size=self.args["batchSize"],
+                    verbose=self.args["kerLogMax"])
+                # x = self.model.predict_on_batch(x=data)
                 self.log(str(x))
 
             else:
@@ -391,7 +396,7 @@ class NeuralNetwork():
                 stateDict["meanError"] = self.sumError / self.numValidExamples
 
             # save model
-            self.make_keras_picklable()
+            # self.make_keras_picklable()
             model_bytes = pickle.dumps(self.model)
             stateDict['model_bin'] = Binary(model_bytes)
             self.db.shoveJson(stateDict, collName=str(self.args["modelColl"]))
