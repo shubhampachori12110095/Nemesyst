@@ -4,7 +4,7 @@
 # @Date:   2018-07-02
 # @Filename: NeuralNetwork.py
 # @Last modified by:   archer
-# @Last modified time: 2018-08-30
+# @Last modified time: 2018-09-06
 # @License: Please see LICENSE file in project root
 
 
@@ -45,6 +45,9 @@ class NeuralNetwork():
         self.numValidExamples = None
         self.log(self.prePend + "NN.init() success", 3)
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(args["tfLogMin"])
+
+        self.predictions = []
+        self.targets = []
 
 
 
@@ -229,6 +232,33 @@ class NeuralNetwork():
             self.log(self.prePend + "model not already in memory attempting retrieval", 3)
             self.getModel()
         self.modler(toPredict=True)
+        if(self.predictions != []): # only if not empty
+            None
+            self.log("FEHK ME", 3)
+            df = pd.DataFrame()
+            df["target"] = pd.Series(self.targets).values
+            df["prediction"] = pd.Series(self.predictions).values
+            print(df)
+            # df = df.iloc[:df[df["target"] > 3000].index[0]]
+            # df = df.iloc[df[df["target"] < 3000].index[0]]
+            boolList = df["target"] < 3000
+            df = df[boolList]
+            # print(df)
+            # df = df.iloc[:df[df["prediction"] > 3000].index[0]]
+
+
+            import seaborn as sns
+            import matplotlib.pyplot as plt
+            sns.set(color_codes=True)
+            sns.set_context("paper")
+            dense_plot = sns.kdeplot(df["target"], bw=0.2, label="truth", shade=True, cut=0)
+            dense_plot = sns.kdeplot(df["prediction"], bw=0.2, label="predictions", shade=True, cut=0)
+            plt.legend();
+            dense_plot.set_title("Generalised Model Prediction Density Against Ground Truth (Testing Set)")
+            dense_plot.set_ylabel("Function of density (arbitrary)")
+            dense_plot.set_xlabel("Defrost duration (seconds)")
+            dense_plot.get_figure()
+            dense_plot.figure.savefig("generalisedModelPredictionDensityTest.png")
 
 
 
@@ -369,11 +399,12 @@ class NeuralNetwork():
 
             # check if shape meets expectations
             if(data.shape == expectShape):
-                if(target != None):
-                    self.log(target, 0)
+                # if(target != None):
+                    # self.log(target[0][0], 0)
                 x = self.model.predict(x=data, batch_size=self.args["batchSize"],
                     verbose=self.args["kerLogMax"])
-                self.log(str(x))
+                self.gatherResults(target=target[0][0], prediction=x[0][0])
+                # self.log(str(x[0][0]))
 
             else:
                 self.log(self.prePend + str(id) + " " + str(data.shape) + " != "
@@ -384,6 +415,11 @@ class NeuralNetwork():
             self.log(self.prePend + "could not predict:\t" + str(id) + "\n" +
                 str(sys.exc_info()[0]) + " " +
                 str(sys.exc_info()[1]), 2)
+
+    #TODO REMOVE ME IM JUNK
+    def gatherResults(self, target, prediction):
+        self.predictions.insert(len(self.predictions), prediction)
+        self.targets.insert(len(self.targets), target)
 
 
 
